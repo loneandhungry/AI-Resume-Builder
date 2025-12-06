@@ -9,6 +9,9 @@ dotenv.config();
 const port = process.env.PORT;
 const WEB = process.env.MONGODB_URL;
 
+import cookieparser from "cookie-parser"
+app.use(cookieparser());
+
 mongoose.connect(WEB)
 .then(()=> console.log("Database connected!"))
 .catch((err)=> console.log(err));  //Remember that .then() ke saath .catch() rehta hai

@@ -32,7 +32,7 @@ const projectSchema = zod.array(zod.object({
 }))
 
 const schema = zod.object({
-    username : zod.string().min(6,{message: "The username is supposed to be of 6 characters."}).max(6,{message: "The username is supposed to be of 6 characters."}), /// username should be of atleast 6 digits
+    // username : zod.string().min(6,{message: "The username is supposed to be of 6 characters."}).max(6,{message: "The username is supposed to be of 6 characters."}), /// username should be of atleast 6 digits
     name : zod.string().min(3),
     email: zod.string(),
     phoneNumber: zod.string().min(10),
