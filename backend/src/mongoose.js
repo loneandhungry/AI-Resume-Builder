@@ -6,7 +6,7 @@ dotenv.config({path: "../.env.local"});
 
 
 export const person = mongoose.model('users',  //users is the collection here
-   { userID: {type : String, required : true},
+   { userID: {type : String, required : true , immutable : true},
      username : {type : String, required : true},
      name : {type : String, required : true},
      email: {type : String, required : true},

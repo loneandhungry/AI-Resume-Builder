@@ -9,6 +9,7 @@ dotenv.config({path: "../.env.local"});
 import { generateBcrypt, verify } from "./control.js";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import { httpUrl } from "zod";
 
 
 const route = express.Router();
@@ -126,6 +127,136 @@ route.post("/signin",async(req,res)=>{
 })
 
 
+route.get("/resume/all",verify, async(req,res)=>{
+    const userID = req.user.userID;
+ 
+    try{
+    const resume = await person.find({userID : userID});  ///dont forget to await here
+    res.json(resume);
+    } catch(err){
+        console.log(err);
+        return res.send("Not able to fetch your resumes");
+    }
+})
 
 
+route.get("/resume/:id", verify, async(req,res)=>{
+    const resumeID = req.params.id;
+    try{
+       
+    const resume = await person.find({_id: resumeID});
+    if(resume.userID === req.user.userID){    
+     console.log("Matched!")
+     res.json(resume);
+    
+    }
+    else{
+        return res.json({
+           msg:  "Please do not try to open someone else's resume."   //DONT TRY OPENING SOMEONE ELSE'S RESUME
+        })
+    }
+    } catch(err){
+        console.log(err);
+        return res.send("Cannot find this resumeID.Please put in the correct one.");
+    }
+})
+
+route.put("/resume/edit/:id", verify, async(req,res)=>{
+    const resumeID = req.params.id;
+    const edit = req.body;
+
+    const search = await person.findById(resumeID);
+    if(!search){return res.send("This resumeID does not exist.")}
+
+   if ("userID" in edit) {                //IMPORTANT //check whether the user is trying to change the userID 
+    return res.status(400).send("You are not allowed to change userID.");
+}
+    delete edit.userID;
+       
+    try{
+    if(search.userID.toString() === req.user.userID.toString()){  
+         
+     console.log("Matched!")
+     const success = await person.findByIdAndUpdate(resumeID, edit, { new: true });
+      res.json({
+        msg : "Your resume has been updated."
+     })
+     if(!success){
+        return res.send("Resume not found");
+     }
+    }else{
+        return res.send("Don't try to access other people's resume please.")
+    }
+   }catch(err){
+    console.log(err);
+      return res.send("Cannot find your resume.")
+    }
+})
+
+route.delete("/resume/delete/:id",verify,async (req,res)=>{
+    const resumeID = req.params.id;
+    let resume;
+    try{
+     resume = await person.findById(resumeID);
+    } catch(err){
+        return res.send("Incorrect resumeID");
+    }
+    if(!resume){
+        return res.send("This resumeID does not exist.");
+    }
+    if(req.user.userID !== resume.userID.toString() ){
+        return res.send("Please do not try to access other people's resumes.")
+    }
+    try{
+        const success = await person.findByIdAndDelete(resumeID);
+        if(success){
+        return res.send("This resume has been deleted.");
+        }
+        else{
+            res.send("Not able to delete this resume")
+        }
+    } catch(err){
+        console.log(err);
+        return res.send("Not able to delete this resume")
+    }
+})
+
+
+
+route.delete("/user/delete/:id", verify , async(req,res)=>{
+    const userID = req.params.id;
+    if(req.user.userID !== userID ){
+        return res.send("Please do not try to access other people's accounts.")
+    }
+    let user;
+    try{
+     user = await personLogin.findByIdAndDelete(userID);
+    } catch(err){
+        return res.send("Incorrect userID");
+    }
+     if(!user){
+        return res.send("This userID does not exist.");
+    }
+    
+    try {
+        await person.deleteMany({userID : userID});      //deleteMany
+        res.clearCookie("authToken" , {
+            httpOnly: true,
+            sameSite: "strict"
+        })
+        res.send("Your acconut has been completely deleted successfully!!")
+    } catch(err){
+        console.log(err);
+        return res.status(500).send("Not able to delete your account.");
+    }
+})
+
+route.post("/signout",verify,(req,res)=>{
+        res.clearCookie("authToken",{
+            httpOnly : true,
+            sameSite : "strict"
+    })
+     return res.json({ msg : "You have successfullly signed out."})
+    })
+   
 export default route;
